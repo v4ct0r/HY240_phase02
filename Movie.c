@@ -116,6 +116,17 @@ void print_R(int userID){
  * @return 1 on success
  *         0 on failure
  */
+ void print_U(int userID){
+     printf("U %d\n",userID);
+    int index=hash_function(userID);
+    user_t* temp=user_hashtable_p[index];
+    printf("Chain %d of Users:\n",index);
+    while(temp!=NULL){
+        printf("    %d\n",temp->userID);
+        temp=temp->next;
+    }
+     printf("DONE\n");
+ }
 
  int unregister_user(int userID){
         if(user_hashtable_p==NULL){//no users registered
@@ -165,8 +176,8 @@ void print_R(int userID){
  /**
  * @brief Distribute the movies from new release binary tree to the array of categories.
  *
- * @return 0 on success
- *         1 on failure
+ * @return 1 on success
+ *         0 on failure
  */
 
  int distribute_movies(void){

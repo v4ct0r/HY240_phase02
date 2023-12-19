@@ -120,7 +120,7 @@ int main(int argc, char** argv)
 			} else {
 				fprintf(stderr, "%c %d failed\n", event, userID);
 			}
-
+            print_U(userID);
 			break;
 		}
 		/* Event A : A <movieID> <category> <year> - Add new movie. */

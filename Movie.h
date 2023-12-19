@@ -92,6 +92,7 @@ extern int max_users;					   /* The maximum number of registrations (users)*/
 extern int max_id;   			   /* The maximum account ID */
 extern int primes_g[170];
 extern void print_R(int userID);
+extern void print_U(int userID);
 /**
  * @brief Creates a new user.
  * Creates a new user with userID as its identification.
