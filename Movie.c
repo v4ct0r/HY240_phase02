@@ -46,14 +46,6 @@ int hash_function(int userID){
  */
 
 void print_R(int userID){
-    /*
-     R <userID>
-     Chain <j> of Users:
-        <userID1>
-        <userID2>
-        ...
-        <userIDn>
-DONE*/
     printf("R %d\n",userID);
     int index=hash_function(userID);
     user_t* temp=user_hashtable_p[index];
@@ -67,21 +59,21 @@ DONE*/
 
  int register_user(int userID){
      static int counter=0;
-        if(counter==max_users){
+        if(counter==max_users){//check if max users reached
             printf("Max users reached\n");
             return 0;
         }
-     if(userID>max_id){
+     if(userID>max_id){//check if userID is greater than max_id
          printf("User ID is greater than max_users\n");
          return 0;
      }
-     if(user_hashtable_p==NULL){
+     if(user_hashtable_p==NULL){//first time we register a user
          init_hash_table(hashtable_size);
          initialize_hash_function();
      }
      int index=hash_function(userID);
 
-     if(user_hashtable_p[index]==NULL){
+     if(user_hashtable_p[index]==NULL){//first user in this index
          user_hashtable_p[index]=(user_t*)malloc(sizeof(user_t));
          if(user_hashtable_p[index]==NULL){
              printf("Error allocating memory for user\n");
@@ -91,7 +83,7 @@ DONE*/
          user_hashtable_p[index]->history=NULL;
          user_hashtable_p[index]->next=NULL;
      }
-     else{
+     else{//there are already users in this index
          user_t* temp=user_hashtable_p[index];
          user_t* prev=NULL;
          while(temp!=NULL){
@@ -126,7 +118,32 @@ DONE*/
  */
 
  int unregister_user(int userID){
-	 return 1;
+        if(user_hashtable_p==NULL){//no users registered
+            printf("No users registered\n");
+            return 0;
+        }
+        int index=hash_function(userID);
+        if(user_hashtable_p[index]==NULL){//no users in this index
+            printf("No user with this userID\n");
+            return 0;
+        }
+        user_t* temp=user_hashtable_p[index];
+        user_t* prev=NULL;
+        while(temp!=NULL){
+            if(temp->userID==userID){
+                if(prev==NULL){//first user in this index
+                    user_hashtable_p[index]=temp->next;
+                }
+                else{
+                    prev->next=temp->next;
+                }
+                return 1;
+            }
+            prev=temp;
+            temp=temp->next;
+        }
+        printf("No user with this userID\n");
+        return 0;
  }
  
  /**

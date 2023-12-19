@@ -105,7 +105,7 @@ int main(int argc, char** argv)
 			} else {
 				fprintf(stderr, "%c failed\n", event);
 			}
-            print_R(userID);
+            //print_R(userID);
 			break;
 		}
 		/* Event U : U <userID> - Unregister user. */
