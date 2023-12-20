@@ -120,7 +120,7 @@ int main(int argc, char** argv)
 			} else {
 				fprintf(stderr, "%c %d failed\n", event, userID);
 			}
-            print_U(userID);
+            //print_U(userID);
 			break;
 		}
 		/* Event A : A <movieID> <category> <year> - Add new movie. */
@@ -135,7 +135,10 @@ int main(int argc, char** argv)
 			} else {
 				fprintf(stderr, "%c %d %d %d failed\n", event, movieID, category, year);
 			}
-
+           //printf("A %d , %d , %d\n",movieID,category,year);
+           //printf("New releases Tree:\n");
+           //print_A(new_releases);
+           //printf("\nDONE\n");
 			break;
 		}
 		/* Event D : D  - Distribute movies. */
@@ -149,6 +152,8 @@ int main(int argc, char** argv)
 			} else {
 				fprintf(stderr, "%c failed\n", event);
 			}
+            printf("D\n");
+            print_D(categoryArray);
 			break;
 		}
 		/* Event W : W <userID ><category><movieID><score> - Watch movie */

@@ -93,6 +93,8 @@ extern int max_id;   			   /* The maximum account ID */
 extern int primes_g[170];
 extern void print_R(int userID);
 extern void print_U(int userID);
+extern void print_D(movieCategory_t *categoryArray[]);
+extern void print_A(new_movie_t *new_releases);
 /**
  * @brief Creates a new user.
  * Creates a new user with userID as its identification.
