@@ -215,7 +215,7 @@ void print_A(new_movie_t *new_releases) {
     if (new_releases != NULL) {
         print_A(new_releases->lc);
         if(new_releases->rc!=NULL)
-            printf("%d,", new_releases->movieID);
+            printf("%d, ", new_releases->movieID);
         print_A(new_releases->rc);
     }
 }
@@ -317,23 +317,21 @@ movie_t* create_category_array(new_movie_t *temp, int i) {
         categoryArray[i]=(movieCategory_t*)malloc(sizeof(movieCategory_t));
         categoryArray[i]->movie=(movie_t*)malloc(sizeof(movie_t));
         categoryArray[i]->movie=insert_into_category_tree(array,0, k-1);
-        int x=0;
     }
+    return 1;
  }
-
 void print_category_tree(movie_t *pMovie) {
     if (pMovie != NULL) {
         print_category_tree(pMovie->lc);
-        printf("%d,", pMovie->movieID);
+        printf("%d, ", pMovie->movieID);
         print_category_tree(pMovie->rc);
     }
-
 }
-
 void print_D(movieCategory_t *categoryArray[]) {
     int i;
+    char *categoryName[] = {"Action", "Comedy", "Drama", "Fantasy", "Horror", "Thriller"};
     for (i = 0; i < 6; i++) {
-        printf("Category %d:\n", i);
+        printf("%s : ", categoryName[i]);
         print_category_tree(categoryArray[i]->movie);
         printf("\n");
     }

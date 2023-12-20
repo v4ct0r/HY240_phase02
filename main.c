@@ -135,10 +135,10 @@ int main(int argc, char** argv)
 			} else {
 				fprintf(stderr, "%c %d %d %d failed\n", event, movieID, category, year);
 			}
-           //printf("A %d , %d , %d\n",movieID,category,year);
-           //printf("New releases Tree:\n");
-           //print_A(new_releases);
-           //printf("\nDONE\n");
+           printf("A %d , %d , %d\n",movieID,category,year);
+           printf("New releases Tree:\n    ");
+           print_A(new_releases);
+           printf("\nDONE\n");
 			break;
 		}
 		/* Event D : D  - Distribute movies. */
