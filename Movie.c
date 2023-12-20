@@ -8,7 +8,7 @@
 #include "Movie.h"
 
 int a, b;
-int p = 1021;
+int p ;
 
 int hashtable_SIZE(int max_users,int primes_g[]){
         int i;
@@ -27,15 +27,23 @@ void init_hash_table(int hash_table_size){
          exit(1);
      }
  }
+int init_p(int max_users,int primes_g[]){
+    //p=random in range max_users to 1021
+    srand(time(NULL));
+    int rand_p = rand() % (1020 - hashtable_size + 1) + hashtable_size;
+    for(int i=0;i<170;i++){
+        if(primes_g[i]>=rand_p)
+            return primes_g[i];
+    }
+}
 void initialize_hash_function() {
     srand(time(NULL));
     a = rand() % (p-1) + 1; //range 1 to p-1
     b = rand() % (p-1); //range 0 to p-1
 }
 int hash_function(int userID){
-        //return ((a*userID+b)%p)%hashtable_size;
-        return userID%3;
-    }
+    return ((a*userID+b)%p)%hashtable_size;
+}
 /**
  * @brief Creates a new user.
  * Creates a new user with userID as its identification.
@@ -70,10 +78,11 @@ void print_R(int userID){
      }
      if(user_hashtable_p==NULL){//first time we register so initialize the hashtable
          init_hash_table(hashtable_size);
+         p=init_p(max_users,primes_g);
          initialize_hash_function();
      }
-     int index=hash_function(userID);
 
+     int index=hash_function(userID);
      if(user_hashtable_p[index]==NULL){//first user in this index
          user_hashtable_p[index]=(user_t*)malloc(sizeof(user_t));
          if(user_hashtable_p[index]==NULL){
@@ -107,7 +116,7 @@ void print_R(int userID){
      counter++;
      return 1;
  }
- 
+
 /**
  * @brief Deletes a user.
  * Deletes a user with userID from the system, along with users' history tree.
@@ -214,8 +223,7 @@ void insert_new_movie(new_movie_t *new_releases, int id, int category, int year)
 void print_A(new_movie_t *new_releases) {
     if (new_releases != NULL) {
         print_A(new_releases->lc);
-        if(new_releases->rc!=NULL)
-            printf("%d, ", new_releases->movieID);
+        printf("%d, ", new_releases->movieID);
         print_A(new_releases->rc);
     }
 }
@@ -233,7 +241,7 @@ void print_A(new_movie_t *new_releases) {
  */
 
  int add_new_movie(int movieID, int category, int year){
-    if(new_releases==NULL){//first movie
+    if(new_releases==NULL){//first movie - root
          new_releases=(new_movie_t*)malloc(sizeof(new_movie_t));
          if(new_releases==NULL){
              printf("Error allocating memory for new movie\n");
@@ -253,14 +261,11 @@ void print_A(new_movie_t *new_releases) {
      return 1;
  }
 
-movie_t *Sentinel;
-
-
+ movie_t *Sentinel;
 
 movie_t* insert_into_category_tree(movie_t array[], int start, int end){
-    //inorder insert from array to tree
     if(start>end)
-        return NULL;
+        return Sentinel;
     int mid=(start+end)/2;
     movie_t* root=(movie_t*)malloc(sizeof(movie_t));
     if(root==NULL){
@@ -276,25 +281,23 @@ movie_t* insert_into_category_tree(movie_t array[], int start, int end){
     return root;
 }
 
-movie_t *array;
 int k ;
-movie_t* create_category_array(new_movie_t *temp, int i) {
-    static movie_t* array = NULL;
-    if (temp == NULL) {
+movie_t* array ;
+movie_t* create_category_array(new_movie_t *temp, int i) {//create array of movies of category i in inorder traversal= array shorted by movieID
+    if (temp != NULL) {
+        create_category_array(temp->lc, i);
+
+        if (temp->category == i) {
+            array = (movie_t *) realloc(array, (k + 1) * sizeof(movie_t));
+            array[k].movieID = temp->movieID;
+            array[k].year = temp->year;
+            array[k].watchedCounter = temp->watchedCounter;
+            array[k].sumScore = temp->sumScore;
+            k++;
+        }
+        create_category_array(temp->rc, i);
         return array;
     }
-    create_category_array(temp->lc, i);
-
-    if (temp->category == i) {
-        array = (movie_t *) realloc(array, (k + 1) * sizeof(movie_t));
-        array[k].movieID = temp->movieID;
-        array[k].year = temp->year;
-        array[k].watchedCounter = temp->watchedCounter;
-        array[k].sumScore = temp->sumScore;
-        k++;
-    }
-    create_category_array(temp->rc, i);
-    return array;
 }
 
 /**
@@ -311,17 +314,32 @@ movie_t* create_category_array(new_movie_t *temp, int i) {
         printf("No movies to distribute\n");
         return 0;
     }
+    Sentinel=(movie_t*)malloc(sizeof(movie_t));
+    if(Sentinel==NULL){
+        printf("Error allocating memory for sentinel\n");
+        exit(1);
+    }
+    Sentinel->movieID=-1;
     for(int i=0;i<6;i++){
-        k=0;
-        array = create_category_array(new_releases,i);
+        k=0;//counter for array
+        array=NULL;// if array was global
+        movie_t *array = create_category_array(new_releases,i);
         categoryArray[i]=(movieCategory_t*)malloc(sizeof(movieCategory_t));
+        if(categoryArray[i]==NULL){
+            printf("Error allocating memory for category\n");
+            exit(1);
+        }
         categoryArray[i]->movie=(movie_t*)malloc(sizeof(movie_t));
+        if(categoryArray[i]->movie==NULL){
+            printf("Error allocating memory for category\n");
+            exit(1);
+        }
         categoryArray[i]->movie=insert_into_category_tree(array,0, k-1);
     }
     return 1;
  }
 void print_category_tree(movie_t *pMovie) {
-    if (pMovie != NULL) {
+    if (pMovie != Sentinel){
         print_category_tree(pMovie->lc);
         printf("%d, ", pMovie->movieID);
         print_category_tree(pMovie->rc);
@@ -329,7 +347,7 @@ void print_category_tree(movie_t *pMovie) {
 }
 void print_D(movieCategory_t *categoryArray[]) {
     int i;
-    char *categoryName[] = {"Action", "Comedy", "Drama", "Fantasy", "Horror", "Thriller"};
+    char *categoryName[] = {"HORROR", "SCIFI", "DRAMA", "ROMANCE", "DOCUMENTARY", "COMEDY"};
     for (i = 0; i < 6; i++) {
         printf("%s : ", categoryName[i]);
         print_category_tree(categoryArray[i]->movie);
@@ -337,7 +355,7 @@ void print_D(movieCategory_t *categoryArray[]) {
     }
     printf("DONE\n");
  }
- 
+
  /**
  * @brief User rates the movie with identification movieID with score
  *
@@ -349,11 +367,48 @@ void print_D(movieCategory_t *categoryArray[]) {
  * @return 1 on success
  *         0 on failure
  */
-
- int watch_movie(int userID,int category, int movieID, int score){
-	 return 1;
+ movie_t * search_movie_W(movie_t *root, int movieID){
+     if(root==Sentinel)
+         return NULL;
+     movie_t* temp=root;
+     while(temp!=Sentinel){
+         if(temp->movieID==movieID){
+             return temp;
+         }
+         else if(temp->movieID<movieID){
+             temp=temp->rc;
+         }
+         else{
+             temp=temp->lc;
+         }
+     }
+        return NULL;
  }
- 
+int search_user(int userID,user_t* user){
+    user_t* temp=user_hashtable_p[hash_function(userID)];
+    while(temp!=NULL){
+        if(temp->userID==userID){
+            user->userID=temp->userID;
+            user->history=temp->history;
+            return 1;
+        }
+        temp=temp->next;
+    }
+    return 0;
+}
+ int watch_movie(int userID,int category, int movieID, int score) {
+     //search for the movie in category tree
+     movie_t *temp = search_movie_W(categoryArray[category]->movie, movieID);
+     if (temp == NULL) {
+         printf("No movie with this movieID\n");
+         return 0;
+     }
+     //search for the user in hashtable
+     user_t temp_user;
+     if (!search_user(userID, &temp_user))
+         return 0;
+
+ }
 /**
  * @brief Identify the best rating score movie and cluster all the movies of a category.
  *
@@ -367,7 +422,7 @@ void print_D(movieCategory_t *categoryArray[]) {
  int filter_movies(int userID, int score){
 	 return 1;
  }
- 
+
 /**
  * @brief Find movies from categories withn median_score >= score t
  *
@@ -382,7 +437,15 @@ void print_D(movieCategory_t *categoryArray[]) {
  int user_stats(int userID){
 	 return 1;
  }
- 
+
+
+
+void print_I(int id, int category, int year) {
+    char *categoryName[] = {"HORROR", "SCIFI", "DRAMA", "ROMANCE", "DOCUMENTARY", "COMEDY"};
+    printf("I %d %s %d \n", id, categoryName[category], year);
+    printf("DONE\n");
+}
+
 /**
  * @brief Search for a movie with identification movieID in a specific category.
  *
@@ -394,9 +457,24 @@ void print_D(movieCategory_t *categoryArray[]) {
  */
 
  int search_movie(int movieID, int category){
-	 return 1;
+    if(categoryArray[category]->movie==Sentinel)
+        return 0;
+    movie_t* temp=categoryArray[category]->movie;
+    while(temp!=Sentinel){
+        if(temp->movieID==movieID){
+            print_I(movieID,category,temp->year);
+            return 1;
+        }
+        else if(temp->movieID<movieID){
+            temp=temp->rc;
+        }
+        else{
+            temp=temp->lc;
+        }
+    }
+    return 0;
  }
- 
+
  /**
  * @brief Prints the movies in movies categories array.
  * @return 1 on success
@@ -404,9 +482,10 @@ void print_D(movieCategory_t *categoryArray[]) {
  */
 
  int print_movies(void){
+     print_D(categoryArray);
 	 return 1;
  }
- 
+
   /**
  * @brief Prints the users hashtable.
  * @return 1 on success
@@ -429,4 +508,4 @@ void print_D(movieCategory_t *categoryArray[]) {
      }
      printf("DONE\n");
  }
- 
+
