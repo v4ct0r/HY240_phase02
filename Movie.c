@@ -286,7 +286,6 @@ movie_t* array ;
 movie_t* create_category_array(new_movie_t *temp, int i) {//create array of movies of category i in inorder traversal= array shorted by movieID
     if (temp != NULL) {
         create_category_array(temp->lc, i);
-
         if (temp->category == i) {
             array = (movie_t *) realloc(array, (k + 1) * sizeof(movie_t));
             array[k].movieID = temp->movieID;
@@ -320,10 +319,12 @@ movie_t* create_category_array(new_movie_t *temp, int i) {//create array of movi
         exit(1);
     }
     Sentinel->movieID=-1;
+    Sentinel->rc=NULL;
+    Sentinel->lc=NULL;
     for(int i=0;i<6;i++){
         k=0;//counter for array
         array=NULL;// if array was global
-        movie_t *array = create_category_array(new_releases,i);
+        array = create_category_array(new_releases,i);
         categoryArray[i]=(movieCategory_t*)malloc(sizeof(movieCategory_t));
         if(categoryArray[i]==NULL){
             printf("Error allocating memory for category\n");
@@ -338,6 +339,7 @@ movie_t* create_category_array(new_movie_t *temp, int i) {//create array of movi
     }
     return 1;
  }
+
 void print_category_tree(movie_t *pMovie) {
     if (pMovie != Sentinel){
         print_category_tree(pMovie->lc);
@@ -355,7 +357,6 @@ void print_D(movieCategory_t *categoryArray[]) {
     }
     printf("DONE\n");
  }
-
  /**
  * @brief User rates the movie with identification movieID with score
  *
@@ -384,30 +385,104 @@ void print_D(movieCategory_t *categoryArray[]) {
      }
         return NULL;
  }
-int search_user(int userID,user_t* user){
-    user_t* temp=user_hashtable_p[hash_function(userID)];
-    while(temp!=NULL){
-        if(temp->userID==userID){
-            user->userID=temp->userID;
-            user->history=temp->history;
+
+int search_user(int userID, user_t** user){
+    if(user_hashtable_p==NULL)
+        return 0;
+    int index=hash_function(userID);
+    if(user_hashtable_p[index]==NULL)
+        return 0;
+
+    *user=user_hashtable_p[index];
+    while(*user!=NULL){
+        if((*user)->userID==userID){
             return 1;
         }
+        user_t *temp=*user;
         temp=temp->next;
     }
     return 0;
 }
- int watch_movie(int userID,int category, int movieID, int score) {
+struct user_movie *copy_node(struct user_movie *root) {
+    userMovie_t *temp = (userMovie_t *) malloc(sizeof(userMovie_t));
+    if (temp == NULL) {
+        printf("Error allocating memory for user movie\n");
+        exit(1);
+    }
+    temp->movieID = root->movieID;
+    temp->score = root->score;
+    temp->category = root->category;
+    temp->lc = NULL;
+    temp->rc = NULL;
+    return temp;
+}
+
+userMovie_t *insert_node(movie_t *movie) {
+    return NULL;
+}
+
+void insert_pointers(userMovie_t *root, userMovie_t *parent) {
+        root->parent = parent;
+        root->rc=NULL ;
+        root->lc=NULL ;
+}
+
+void insert_watch_history(userMovie_t **root, movie_t *movie, int score, int category) {
+     if(*root == NULL){
+         *root =(userMovie_t*)malloc(sizeof(userMovie_t));
+         if(*root==NULL) {
+             printf("Error allocating memory for user movie\n");
+             exit(1);
+         }
+         userMovie_t *temp = *root;
+         temp->score=score;
+         temp->movieID=movie->movieID;
+         temp->category=category;
+         temp->lc=NULL;
+         temp->rc=NULL;
+         temp->parent=NULL;
+         return;
+     }
+     userMovie_t *temp = root;
+    while (temp!=NULL){
+        if (temp->movieID>movie->movieID){
+            if (temp->lc==NULL){
+                temp->rc=copy_node(root);
+                insert_pointers(temp->rc, temp);
+
+                temp=insert_node(movie) ;
+                temp->lc= insert_node(movie);
+            }
+            temp = temp->lc;
+        }
+
+        else{
+            printf("User already watched this movie\n");
+            return;
+
+        }
+    }
+
+}
+
+
+
+int watch_movie(int userID, int category, int movieID, int score) {
      //search for the movie in category tree
-     movie_t *temp = search_movie_W(categoryArray[category]->movie, movieID);
-     if (temp == NULL) {
-         printf("No movie with this movieID\n");
+     movie_t *temp_movie = search_movie_W(categoryArray[category]->movie, movieID);
+     if (temp_movie == NULL) {
+         printf("No movie with this movieID in this category\n");
          return 0;
      }
      //search for the user in hashtable
-     user_t temp_user;
+        user_t *temp_user = NULL;
      if (!search_user(userID, &temp_user))
          return 0;
-
+        //insert movie in user's history tree
+        int x = hash_function(userID);
+        user_t **t2= user_hashtable_p;
+    insert_watch_history(&(temp_user->history),temp_movie, score, category);
+    return 1;
  }
 /**
  * @brief Identify the best rating score movie and cluster all the movies of a category.
