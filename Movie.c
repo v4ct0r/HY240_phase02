@@ -138,22 +138,21 @@ void print_R(int userID){
      printf("DONE\n");
  }
 
-void delete_history_tree(userMovie_t *pMovie) {
-    if (pMovie != NULL) {
-        delete_history_tree(pMovie->lc);
-        delete_history_tree(pMovie->rc);
-        pMovie=NULL;
+void delete_history_tree(userMovie_t **root){
+    if(*root!=NULL){
+        delete_history_tree(&((*root)->lc));
+        delete_history_tree(&((*root)->rc));
+        free(*root);
+        *root=NULL;
     }
 }
 
 int unregister_user(int userID){
         if(user_hashtable_p==NULL){//no users registered
-            printf("No users registered\n");
             return 0;
         }
         int index=hash_function(userID);
         if(user_hashtable_p[index]==NULL){//no users in this index
-            printf("No user with this userID\n");
             return 0;
         }
         user_t* temp=user_hashtable_p[index];
@@ -161,11 +160,11 @@ int unregister_user(int userID){
         while(temp!=NULL){
             if(temp->userID==userID){
                 if(prev==NULL){//first user in this index
-                    delete_history_tree(temp->history);
+                    delete_history_tree(&(temp)->history);
                     user_hashtable_p[index]=temp->next;
                 }
                 else{
-                    delete_history_tree(temp->history);
+                    delete_history_tree(&(temp)->history);
                     prev->next=temp->next;
                 }
                 return 1;
@@ -173,8 +172,7 @@ int unregister_user(int userID){
             prev=temp;
             temp=temp->next;
         }
-        printf("No user with this userID\n");
-        return 0;
+        return 0;//user not found
  }
 
 void insert_new_movie(new_movie_t *new_releases, int id, int category, int year) {
@@ -282,10 +280,9 @@ movie_t* insert_into_category_tree(movie_t array[], int start, int end){
 }
 
 int k ;
-movie_t* array ;
-movie_t* create_category_array(new_movie_t *temp, int i) {//create array of movies of category i in inorder traversal= array shorted by movieID
+movie_t* create_category_array(new_movie_t *temp, int i, movie_t* array) {
     if (temp != NULL) {
-        create_category_array(temp->lc, i);
+        array = create_category_array(temp->lc, i, array);
         if (temp->category == i) {
             array = (movie_t *) realloc(array, (k + 1) * sizeof(movie_t));
             array[k].movieID = temp->movieID;
@@ -294,9 +291,9 @@ movie_t* create_category_array(new_movie_t *temp, int i) {//create array of movi
             array[k].sumScore = temp->sumScore;
             k++;
         }
-        create_category_array(temp->rc, i);
-        return array;
+        array = create_category_array(temp->rc, i, array);
     }
+    return array;
 }
 
 /**
@@ -323,8 +320,8 @@ movie_t* create_category_array(new_movie_t *temp, int i) {//create array of movi
     Sentinel->lc=NULL;
     for(int i=0;i<6;i++){
         k=0;//counter for array
-        array=NULL;// if array was global
-        array = create_category_array(new_releases,i);
+        movie_t *array=NULL;// if array was global
+        array = create_category_array(new_releases,i,array);
         categoryArray[i]=(movieCategory_t*)malloc(sizeof(movieCategory_t));
         if(categoryArray[i]==NULL){
             printf("Error allocating memory for category\n");
@@ -386,22 +383,20 @@ void print_D(movieCategory_t *categoryArray[]) {
         return NULL;
  }
 
-int search_user(int userID, user_t** user){
+user_t *search_user (int userID){
     if(user_hashtable_p==NULL)
-        return 0;
+        return NULL;
     int index=hash_function(userID);
     if(user_hashtable_p[index]==NULL)
-        return 0;
-
-    *user=user_hashtable_p[index];
-    while(*user!=NULL){
-        if((*user)->userID==userID){
-            return 1;
+        return NULL;
+    user_t *temp=user_hashtable_p[index];
+    while(temp!=NULL){
+        if(temp->userID==userID){
+            return temp;
         }
-        user_t *temp=*user;
         temp=temp->next;
     }
-    return 0;
+    return NULL;
 }
 struct user_movie *copy_node(struct user_movie *root) {
     userMovie_t *temp = (userMovie_t *) malloc(sizeof(userMovie_t));
@@ -412,76 +407,101 @@ struct user_movie *copy_node(struct user_movie *root) {
     temp->movieID = root->movieID;
     temp->score = root->score;
     temp->category = root->category;
+    temp->parent = root;
     temp->lc = NULL;
     temp->rc = NULL;
     return temp;
 }
 
-userMovie_t *insert_node(movie_t *movie) {
-    return NULL;
+userMovie_t *insert_node(userMovie_t *movie) {
+    userMovie_t *temp = (userMovie_t *) malloc(sizeof(userMovie_t));
+    if (temp == NULL) {
+        printf("Error allocating memory for user movie\n");
+        exit(1);
+    }
+    temp->movieID = movie->movieID;
+    temp->score =movie->score;
+    temp->category = movie->category;
+    temp->lc = NULL;
+    temp->rc = NULL;
+    return temp;
 }
 
-void insert_pointers(userMovie_t *root, userMovie_t *parent) {
-        root->parent = parent;
-        root->rc=NULL ;
-        root->lc=NULL ;
-}
-
-void insert_watch_history(userMovie_t **root, movie_t *movie, int score, int category) {
+void insert_watch_history(userMovie_t **root, userMovie_t *info) {
      if(*root == NULL){
-         *root =(userMovie_t*)malloc(sizeof(userMovie_t));
-         if(*root==NULL) {
-             printf("Error allocating memory for user movie\n");
-             exit(1);
-         }
-         userMovie_t *temp = *root;
-         temp->score=score;
-         temp->movieID=movie->movieID;
-         temp->category=category;
-         temp->lc=NULL;
-         temp->rc=NULL;
-         temp->parent=NULL;
+         *root = info;
+         (*root)->lc=NULL;
+         (*root)->rc=NULL;
+         (*root)->parent=NULL;
          return;
      }
-     userMovie_t *temp = root;
+     userMovie_t *temp = *root;
     while (temp!=NULL){
-        if (temp->movieID>movie->movieID){
+        if (temp->movieID>info->movieID){
             if (temp->lc==NULL){
-                temp->rc=copy_node(root);
-                insert_pointers(temp->rc, temp);
-
-                temp=insert_node(movie) ;
-                temp->lc= insert_node(movie);
+                temp->rc=copy_node(temp);
+                temp->movieID=info->movieID;
+                temp->score=info->score;
+                temp->category=info->category;
+                temp->lc= insert_node(info);
+                temp->lc->parent=temp;
             }
             temp = temp->lc;
+        }else if(temp->movieID<info->movieID) {
+            if (temp->rc == NULL) {
+                temp->lc = copy_node(temp);
+                temp->rc = insert_node(info);
+                temp->rc->parent = temp;
+            }
+            temp = temp->rc;
         }
-
         else{
-            printf("User already watched this movie\n");
             return;
-
         }
     }
-
+}
+void print_history_tree(userMovie_t *root){
+    if(root!=NULL){
+        print_history_tree(root->lc);
+        if(root->rc==NULL&&root->lc==NULL)
+            printf("        MovieID:%d Score:%d\n",root->movieID,root->score);
+        print_history_tree(root->rc);
+    }
 }
 
-
+void Print_W(user_t *user) {
+    printf("History Tree of user %d:\n", user->userID);
+    print_history_tree(user->history);
+}
 
 int watch_movie(int userID, int category, int movieID, int score) {
      //search for the movie in category tree
      movie_t *temp_movie = search_movie_W(categoryArray[category]->movie, movieID);
      if (temp_movie == NULL) {
-         printf("No movie with this movieID in this category\n");
          return 0;
      }
      //search for the user in hashtable
-        user_t *temp_user = NULL;
-     if (!search_user(userID, &temp_user))
-         return 0;
-        //insert movie in user's history tree
-        int x = hash_function(userID);
-        user_t **t2= user_hashtable_p;
-    insert_watch_history(&(temp_user->history),temp_movie, score, category);
+    user_t *temp_user = search_user(userID);
+    if (temp_user == NULL) {
+        return 0;
+    }
+    temp_movie->watchedCounter++;
+    temp_movie->sumScore += score;
+    //insert movie in user's history tree
+   //int x = hash_function(userID);
+   // user_t **t2= user_hashtable_p;
+     userMovie_t *info = (userMovie_t *) malloc(sizeof(userMovie_t));
+     if (info == NULL) {
+         printf("Error allocating memory for user movie\n");
+         exit(1);
+     }
+     info->movieID = temp_movie->movieID;
+     info->category = category;
+     info->score = score;
+     insert_watch_history(&(temp_user->history),info);
+
+     //Print_W(temp_user);
+
     return 1;
  }
 /**
@@ -495,7 +515,9 @@ int watch_movie(int userID, int category, int movieID, int score) {
  */
 
  int filter_movies(int userID, int score){
-	 return 1;
+	 //search in the category tree for movies with score>=score
+
+
  }
 
 /**
@@ -576,7 +598,7 @@ void print_I(int id, int category, int year) {
              while(temp!=NULL){
                  printf("    %d\n",temp->userID);
                  printf("    History Tree:\n");
-                 //print_history_tree(temp->history);
+                 print_history_tree(temp->history);
                  temp=temp->next;
              }
          }
