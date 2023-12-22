@@ -316,8 +316,6 @@ movie_t* create_category_array(new_movie_t *temp, int i, movie_t* array) {
         exit(1);
     }
     Sentinel->movieID=-1;
-    Sentinel->rc=NULL;
-    Sentinel->lc=NULL;
     for(int i=0;i<6;i++){
         k=0;//counter for array
         movie_t *array=NULL;// if array was global
@@ -488,8 +486,6 @@ int watch_movie(int userID, int category, int movieID, int score) {
     temp_movie->watchedCounter++;
     temp_movie->sumScore += score;
     //insert movie in user's history tree
-   //int x = hash_function(userID);
-   // user_t **t2= user_hashtable_p;
      userMovie_t *info = (userMovie_t *) malloc(sizeof(userMovie_t));
      if (info == NULL) {
          printf("Error allocating memory for user movie\n");
@@ -504,6 +500,72 @@ int watch_movie(int userID, int category, int movieID, int score) {
 
     return 1;
  }
+
+int count_movies(movie_t *root, int score) {
+    if (root == Sentinel)
+        return 0;
+    if (root->watchedCounter!=0 && root->sumScore / root->watchedCounter >= score)
+        return 1 + count_movies(root->lc, score) + count_movies(root->rc, score);
+    else
+        return count_movies(root->lc, score) + count_movies(root->rc, score);
+}
+
+movie_t** create_filter_array(movie_t *root, int score, movie_t **array){
+    if(root != Sentinel) {
+        if (root->watchedCounter != 0 && root->sumScore / root->watchedCounter > score) {
+            array[k++] = root;
+        }
+        array = create_filter_array(root->lc, score, array);
+        array = create_filter_array(root->rc, score, array);
+    }
+    return array;
+}
+
+void swap(movie_t **a, movie_t **b)
+{
+    movie_t *t = *a;
+    *a = *b;
+    *b = t;
+}
+
+void heapify(movie_t *array[], int n, int i) {
+    int largest = i;
+    int l = 2*i + 1; // left = 2*i + 1
+    int r = 2*i + 2; // right = 2*i + 2
+
+    if (l < n && ((float)array[l]->sumScore / array[l]->watchedCounter) > ((float)array[largest]->sumScore / array[largest]->watchedCounter)) {
+        largest = l;
+    }
+    if (r < n && ((float)array[r]->sumScore / array[r]->watchedCounter) > ((float)array[largest]->sumScore / array[largest]->watchedCounter)) {
+        largest = r;
+    }
+    if (largest != i) {
+        swap(&array[i], &array[largest]);
+        heapify(array, n, largest);
+    }
+}
+
+void heapSort(movie_t *array[], int n) {
+    for (int i = n / 2 - 1; i >= 0; i--) {
+        heapify(array, n, i); //build heap
+    }
+
+    for (int i = n - 1; i >= 0; i--) {
+        swap(&array[0], &array[i]);
+        heapify(array, i, 0);
+    }
+}
+
+
+void print_F(int userID,int score , movie_t **array, int numMovies) {
+    printf("    ");
+    for (int i = 0; i < numMovies; i++) {
+        printf("%d  %.3f , ", array[i]->movieID, (float)array[i]->sumScore/array[i]->watchedCounter);
+    }
+    printf("\nDone\n");
+
+}
+
 /**
  * @brief Identify the best rating score movie and cluster all the movies of a category.
  *
@@ -517,7 +579,26 @@ int watch_movie(int userID, int category, int movieID, int score) {
  int filter_movies(int userID, int score){
 	 //search in the category tree for movies with score>=score
 
-
+    user_t *temp_user = search_user(userID);
+    if (temp_user == NULL) {
+        return 0;
+    }
+    int numMovies=0;
+    for(int i=0;i<6;i++){
+        numMovies+=count_movies(categoryArray[i]->movie,score);
+    }
+    movie_t **array=(movie_t**)malloc(numMovies*sizeof(movie_t*));
+    if(array==NULL){
+        printf("Error allocating memory for array\n");
+        exit(1);
+    }
+    k=0;
+    for(int i=0;i<6;i++){
+       array=create_filter_array(categoryArray[i]->movie,score,array);
+    }
+    heapSort(array,numMovies);
+    print_F(userID,score,array,numMovies);
+    return 1;
  }
 
 /**
@@ -591,6 +672,9 @@ void print_I(int id, int category, int year) {
 
  int print_users(void){
      //print hashtable
+     if(user_hashtable_p==NULL){
+         return 0;
+     }
      for(int i=0;i<hashtable_size;i++){
          if(user_hashtable_p[i]!=NULL){
              printf("Chain %d of Users:\n",i);
@@ -604,5 +688,6 @@ void print_I(int id, int category, int year) {
          }
      }
      printf("DONE\n");
+     return 1;
  }
 
