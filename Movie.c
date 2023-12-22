@@ -546,7 +546,7 @@ void heapify(movie_t *array[], int n, int i) {
 }
 
 void heapSort(movie_t *array[], int n) {
-    for (int i = n / 2 - 1; i >= 0; i--) {
+    for (int i = n / 2 - 1; i >= 0; i--) { //n/2-1 is the last node with at least one child
         heapify(array, n, i); //build heap
     }
 
@@ -597,7 +597,7 @@ void print_F(int userID,int score , movie_t **array, int numMovies) {
        array=create_filter_array(categoryArray[i]->movie,score,array);
     }
     heapSort(array,numMovies);
-    print_F(userID,score,array,numMovies);
+    //print_F(userID,score,array,numMovies);
     return 1;
  }
 
@@ -613,7 +613,10 @@ void print_F(int userID,int score , movie_t **array, int numMovies) {
  */
 
  int user_stats(int userID){
-	 return 1;
+
+
+
+
  }
 
 
