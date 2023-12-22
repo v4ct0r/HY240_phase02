@@ -27,7 +27,7 @@ void init_hash_table(int hash_table_size){
          exit(1);
      }
  }
-int init_p(int max_users,int primes_g[]){
+int init_p(){
     //p=random in range max_users to 1021
     srand(time(NULL));
     int rand_p = rand() % (1020 - hashtable_size + 1) + hashtable_size;
@@ -78,7 +78,7 @@ void print_R(int userID){
      }
      if(user_hashtable_p==NULL){//first time we register so initialize the hashtable
          init_hash_table(hashtable_size);
-         p=init_p(max_users,primes_g);
+         p=init_p();
          initialize_hash_function();
      }
 
@@ -734,7 +734,6 @@ void print_I(int id, int category, int year) {
  */
 
  int print_users(void){
-     //print hashtable
      if(user_hashtable_p==NULL){
          return 0;
      }
