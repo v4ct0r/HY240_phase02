@@ -132,14 +132,12 @@ int main(int argc, char** argv)
 
 			if ( add_new_movie(movieID, category, year) ) {
 				DPRINT("%c %d %d %d succeeded\n", event, movieID, category, year);
-             //   printf("New releases Tree:\n    ");
-             //   print_A(new_releases);
-             //   printf("\nDONE\n");
+                printf("New releases Tree:\n    ");
+                print_A(new_releases);
+                printf("\nDONE\n");
 			} else {
 				fprintf(stderr, "%c %d %d %d failed\n", event, movieID, category, year);
 			}
-          // printf("A %d , %d , %d\n",movieID,category,year);
-
 			break;
 		}
 		/* Event D : D  - Distribute movies. */
@@ -149,7 +147,7 @@ int main(int argc, char** argv)
 			DPRINT("%c\n", event);
 
 			if ( distribute_movies() ) {
-              //  print_D(categoryArray);
+                print_D(categoryArray);
 				DPRINT("%c succeeded\n", event);
 			} else {
 				fprintf(stderr, "%c failed\n", event);
