@@ -600,6 +600,57 @@ void print_F(int userID,int score , movie_t **array, int numMovies) {
     //print_F(userID,score,array,numMovies);
     return 1;
  }
+ int counter ;
+ int Sumscore ;
+
+
+userMovie_t * fully_left_leaf(userMovie_t *root){
+    if(root==NULL)
+        return NULL;
+    if(root->lc==NULL&&root->rc==NULL)
+        return root;
+    if(root->lc!=NULL)
+        return fully_left_leaf(root->lc);
+    else
+        return fully_left_leaf(root->rc);
+
+}
+
+userMovie_t *FindNextleaf(userMovie_t *prev_child){
+    if(prev_child->parent==NULL)
+        return NULL;
+    if(prev_child->parent->lc==prev_child){
+        if(prev_child->parent->rc!=NULL)
+            return fully_left_leaf(prev_child->parent->rc);
+        else
+            return FindNextleaf(prev_child->parent);
+    }
+    else{
+        return FindNextleaf(prev_child->parent);
+    }
+}/*
+ * if leaf is left child -> if right child is not null -> return fully left leaf of right child
+ * else temp_root = leaf->parent
+ * */
+
+
+
+int total_score(userMovie_t *root){
+    userMovie_t *left=fully_left_leaf(root);
+    if(left==NULL)
+        return -1;
+    Sumscore+=left->score;
+    counter++;
+    while (1){
+        userMovie_t *next=FindNextleaf(left);
+        if(next==NULL)
+            break;
+        left=next;
+        Sumscore+=next->score;
+        counter++;
+    }
+    return Sumscore/counter;
+}
 
 /**
  * @brief Find movies from categories withn median_score >= score t
@@ -613,10 +664,19 @@ void print_F(int userID,int score , movie_t **array, int numMovies) {
  */
 
  int user_stats(int userID){
-
-
-
-
+     //search for user in hashtable
+     user_t *temp_user = search_user(userID);
+     if (temp_user == NULL) {
+         return 0;
+     }
+     counter=0;
+     Sumscore=0;
+     //add all scores of the leaves of the tree left to right
+     int score=total_score(temp_user->history);
+        if(score==-1){
+            return 0;
+        }
+        printf("Q %d  %d\n",userID,score);
  }
 
 
