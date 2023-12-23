@@ -1,6 +1,6 @@
 /*****************************************************
  * @file   Movie.c                                   *
- * @author Paterakis Giorgos <geopat@csd.uoc.gr>     *
+ * @author Viktoras Sfakianakis <csd5085@csd.uoc.gr> *
  *                                                   *
  * @brief Implementation for Movie.h 				 *
  * Project: Winter 2023						         *
@@ -162,10 +162,12 @@ int unregister_user(int userID){
             if(prev==NULL){//first user in this index
                 delete_history_tree(&(temp)->history);
                 user_hashtable_p[index]=temp->next;
+                free(temp);
             }
             else{
                 delete_history_tree(&(temp)->history);
                 prev->next=temp->next;
+                free(temp);
             }
             return 1;
         }
@@ -284,7 +286,6 @@ movie_t* create_category_array(new_movie_t *temp, int i, movie_t* array) {//crea
     if (temp != NULL) {
         array = create_category_array(temp->lc, i, array);
         if (temp->category == i) {
-            array = (movie_t *) realloc(array, (k + 1) * sizeof(movie_t));
             array[k].movieID = temp->movieID;
             array[k].year = temp->year;
             array[k].watchedCounter = temp->watchedCounter;
@@ -294,6 +295,14 @@ movie_t* create_category_array(new_movie_t *temp, int i, movie_t* array) {//crea
         array = create_category_array(temp->rc, i, array);
     }
     return array;
+}
+int count_movies_D(new_movie_t *root, int category){
+    if(root==NULL)
+        return 0;
+    if(root->category==category)
+        return 1+count_movies_D(root->lc,category)+count_movies_D(root->rc,category);
+    else
+        return count_movies_D(root->lc,category)+count_movies_D(root->rc,category);
 }
 
 /**
@@ -318,19 +327,19 @@ int distribute_movies(void){
     Sentinel->movieID=-1;
     for(int i=0;i<6;i++){
         k=0;//counter for array
-        movie_t *array=NULL;
-        array = create_category_array(new_releases,i,array);
-        categoryArray[i]=(movieCategory_t*)malloc(sizeof(movieCategory_t));
-        if(categoryArray[i]==NULL){
-            printf("Error allocating memory for category\n");
-            exit(1);
-        }
-        categoryArray[i]->movie=(movie_t*)malloc(sizeof(movie_t));
-        if(categoryArray[i]->movie==NULL){
-            printf("Error allocating memory for category\n");
-            exit(1);
-        }
-        categoryArray[i]->movie=insert_into_category_tree(array,0, k-1);//make each category a tree
+        int total_movies=count_movies_D(new_releases,i);//count movies in category
+
+        movie_t *array=(movie_t*)malloc(total_movies*sizeof(movie_t));//create array with size the number of movies in category
+
+        array = create_category_array(new_releases,i,array);//fill array with movies in category
+            categoryArray[i]=(movieCategory_t*)malloc(sizeof(movieCategory_t));
+            if(categoryArray[i]==NULL){
+                printf("Error allocating memory for category\n");
+                exit(1);
+            }
+
+            categoryArray[i]->movie=insert_into_category_tree(array,0, total_movies-1);//make each category a tree
+        free(array);
     }
     return 1;
 }
@@ -427,9 +436,7 @@ userMovie_t *insert_node(userMovie_t *movie) {
 
 void insert_watch_history(userMovie_t **root, userMovie_t *info) {
     if(*root == NULL){
-        *root = info;
-        (*root)->lc=NULL;
-        (*root)->rc=NULL;
+        (*root)= insert_node(info);
         (*root)->parent=NULL;
         return;
     }
@@ -498,14 +505,14 @@ int watch_movie(int userID, int category, int movieID, int score) {
     insert_watch_history(&(temp_user->history),info);
 
     Print_W(temp_user);
-
+    free(info);
     return 1;
 }
 
 int count_movies(movie_t *root, int score) {
     if (root == Sentinel)
         return 0;
-    if (root->watchedCounter!=0 && root->sumScore / root->watchedCounter >= score)
+    if (root->watchedCounter!=0 &&  (float)root->sumScore / root->watchedCounter >= score)
         return 1 + count_movies(root->lc, score) + count_movies(root->rc, score);
     else
         return count_movies(root->lc, score) + count_movies(root->rc, score);
@@ -514,7 +521,7 @@ int count_movies(movie_t *root, int score) {
 movie_t** create_filter_array(movie_t *root, int score, movie_t **array){
     if(root != Sentinel) {
         array = create_filter_array(root->lc, score, array);
-        if (root->watchedCounter != 0 && root->sumScore / root->watchedCounter >= score) {
+        if (root->watchedCounter != 0 && (float)root->sumScore/root->watchedCounter >= score) {
             array[k] = root;
             k++;
         }
@@ -523,11 +530,11 @@ movie_t** create_filter_array(movie_t *root, int score, movie_t **array){
     return array;
 }
 
-void swap(movie_t **a, movie_t **b)
+void swap(movie_t **c, movie_t **d)
 {
-    movie_t *t = *a;
-    *a = *b;
-    *b = t;
+    movie_t *t = *c;
+    *c = *d;
+    *d = t;
 }
 
 void heapify(movie_t *array[], int n, int i) {
@@ -559,7 +566,7 @@ void heapSort(movie_t *array[], int n) {
 }
 
 
-void print_F(int userID,int score , movie_t **array, int numMovies) {
+void print_F(int score , movie_t **array, int numMovies) {
     printf("    ");
     for (int i = 0; i < numMovies; i++) {
         printf("%d  %.3f , ", array[i]->movieID, (float)array[i]->sumScore/array[i]->watchedCounter);
@@ -603,22 +610,23 @@ int filter_movies(int userID, int score){
     }
 
     heapSort(array,numMovies);
-    print_F(userID,score,array,numMovies);
+    print_F(score,array,numMovies);
+    free(array);
     return 1;
 }
 int counter ;
 int Sumscore ;
 
 
-userMovie_t * fully_left_leaf(userMovie_t *root){
+userMovie_t * leftmost_leaf(userMovie_t *root){
     if(root==NULL)
         return NULL;
     if(root->lc==NULL&&root->rc==NULL)
         return root;
     if(root->lc!=NULL)
-        return fully_left_leaf(root->lc);
+        return leftmost_leaf(root->lc);
     else
-        return fully_left_leaf(root->rc);
+        return leftmost_leaf(root->rc);
 
 }
 
@@ -627,24 +635,25 @@ userMovie_t *FindNextleaf(userMovie_t *prev_child){
         return NULL;
     if(prev_child->parent->lc==prev_child){
         if(prev_child->parent->rc!=NULL)
-            return fully_left_leaf(prev_child->parent->rc);
+            return leftmost_leaf(prev_child->parent->rc);
         else
             return FindNextleaf(prev_child->parent);
     }
     else{
         return FindNextleaf(prev_child->parent);
     }
-}/*
+}
+/*
  * if leaf is left child -> if right child is not null -> return fully left leaf of right child
  * else temp_root = leaf->parent
  * if temp_root is not the left child of its parent
  * temp_root = leaf->parent
- * */
+*/
 
 
 
 float total_score(userMovie_t *root){
-    userMovie_t *left=fully_left_leaf(root);
+    userMovie_t *left=leftmost_leaf(root);
     if(left==NULL)
         return -1;
     Sumscore+=left->score;
@@ -686,8 +695,6 @@ int user_stats(int userID){
     }
     printf("Q %d  %.3f\n",userID,score);
 }
-
-
 
 void print_I(int id, int category, int year) {
     char *categoryName[] = {"HORROR", "SCIFI", "DRAMA", "ROMANCE", "DOCUMENTARY", "COMEDY"};
@@ -761,3 +768,43 @@ int print_users(void){
     return 1;
 }
 
+void free_binary_tree_with_Sentinel(movie_t *root){
+    if(root!=Sentinel){
+        free_binary_tree_with_Sentinel(root->lc);
+        free_binary_tree_with_Sentinel(root->rc);
+        free(root);
+    }
+}
+void free_binary_tree(new_movie_t *root){
+    if(root!=NULL){
+        free_binary_tree(root->lc);
+        free_binary_tree(root->rc);
+        free(root);
+    }
+}
+
+void clean_up(void){
+    for(int i=0;i<6;i++){
+        if(categoryArray[i]!=NULL){
+            free_binary_tree_with_Sentinel(categoryArray[i]->movie);
+            free(categoryArray[i]);
+        }
+        if(i==5)
+            free(Sentinel);
+    }
+    if (new_releases != NULL)
+        free_binary_tree(new_releases);
+
+    for(int i=0;i<hashtable_size;i++){
+        if(user_hashtable_p[i]!=NULL){
+            user_t* temp=user_hashtable_p[i];
+            while(temp!=NULL){
+                user_t* nextUser = temp->next;
+                delete_history_tree(&(temp)->history);
+                free(temp);
+                temp = nextUser;
+            }
+        }
+    }
+    free(user_hashtable_p);
+}

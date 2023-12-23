@@ -1,6 +1,6 @@
 /*****************************************************
  * @file   main.c                                    *
- * @author Paterakis Giorgos <geopat@csd.uoc.gr>     *
+ * @author Viktoras Sfakianakis <csd5085@csd.uoc.gr> *
  *                                                   *
  * @brief Main Function for Data Structures (CS240b) *
  * Project: Winter 2023						         *
@@ -105,7 +105,7 @@ int main(int argc, char** argv)
 			} else {
 				fprintf(stderr, "%c failed\n", event);
 			}
-            //print_R(userID);
+            print_R(userID);
 			break;
 		}
 		/* Event U : U <userID> - Unregister user. */
@@ -120,7 +120,7 @@ int main(int argc, char** argv)
 			} else {
 				fprintf(stderr, "%c %d failed\n", event, userID);
 			}
-            //print_U(userID);
+            print_U(userID);
 			break;
 		}
 		/* Event A : A <movieID> <category> <year> - Add new movie. */
@@ -253,6 +253,7 @@ int main(int argc, char** argv)
 			break;
 		}
 	}
-
+    clean_up();
+    fclose(fin);
 	return (EXIT_SUCCESS);
 }

@@ -1,6 +1,6 @@
 /*****************************************************
- * @file   Movie.h                                    *
- * @author Paterakis Giorgos <geopat@csd.uoc.gr>     *
+ * @file   Movie.h                                   *
+ * @author Viktoras Sfakianakis <csd5085@csd.uoc.gr> *
  *                                                   *
  * @brief Header File for Data Structures (CS240b)   *
  * Project: Winter 2023						         *
@@ -95,6 +95,7 @@ extern void print_R(int userID);
 extern void print_U(int userID);
 extern void print_D(movieCategory_t *categoryArray[]);
 extern void print_A(new_movie_t *new_releases);
+void clean_up(void);
 /**
  * @brief Creates a new user.
  * Creates a new user with userID as its identification.
