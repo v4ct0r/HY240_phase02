@@ -75,7 +75,7 @@ int main(int argc, char** argv)
 	/* Read input file buff-by-buff and handle the events */
 	while ( fgets(buff, BUFFER_SIZE, fin) ) {
 
-		//DPRINT("Event: %s \n", buff);
+		DPRINT("Event: %s \n", buff);
 
 		switch(buff[0]) {
 

@@ -19,7 +19,7 @@ int hashtable_SIZE(int max_users,int primes_g[]){
     }
     return -1;
 }
-void init_hash_table(int hash_table_size){
+void init_hash_table(){
     hashtable_size=hashtable_SIZE(max_users,primes_g);
     user_hashtable_p=(user_t**)calloc(hashtable_size, sizeof(user_t*));
     if(user_hashtable_p==NULL){
@@ -77,7 +77,7 @@ int register_user(int userID){
         return 0;
     }
     if(user_hashtable_p==NULL){//first time we register so initialize the hashtable
-        init_hash_table(hashtable_size);
+        init_hash_table();
         p=init_p();
         initialize_hash_function();
     }
@@ -355,6 +355,8 @@ void print_D(movieCategory_t *categoryArray[]) {
     int i;
     char *categoryName[] = {"HORROR", "SCIFI", "DRAMA", "ROMANCE", "DOCUMENTARY", "COMEDY"};
     for (i = 0; i < 6; i++) {
+        if(categoryArray[i]==NULL)
+            continue;
         printf("%s : ", categoryName[i]);
         print_category_tree(categoryArray[i]->movie);
         printf("\n");
@@ -445,9 +447,9 @@ void insert_watch_history(userMovie_t **root, userMovie_t *info) {
         if (info->movieID<temp->movieID){
             if (temp->lc==NULL){
                 temp->rc=copy_node(temp);
-                temp->movieID=info->movieID;
-                temp->score=info->score;
-                temp->category=info->category;
+               // temp->movieID=info->movieID;
+               // temp->score=info->score;
+               // temp->category=info->category;
                 temp->lc= insert_node(info);
                 temp->lc->parent=temp;
                 return;
@@ -650,8 +652,6 @@ userMovie_t *FindNextleaf(userMovie_t *prev_child){
  * temp_root = leaf->parent
 */
 
-
-
 float total_score(userMovie_t *root){
     userMovie_t *left=leftmost_leaf(root);
     if(left==NULL)
@@ -713,6 +713,8 @@ void print_I(int id, int category, int year) {
  */
 
 int search_movie(int movieID, int category){
+    if(categoryArray[category]==NULL)
+        return 0;
     if(categoryArray[category]->movie==Sentinel)
         return 0;
     movie_t* temp=categoryArray[category]->movie;
@@ -789,10 +791,10 @@ void clean_up(void){
             free_binary_tree_with_Sentinel(categoryArray[i]->movie);
             free(categoryArray[i]);
         }
-        if(i==5)
-            free(Sentinel);
     }
-    if (new_releases != NULL)
+    if(Sentinel!=NULL)
+        free(Sentinel);
+    if (new_releases!=NULL)
         free_binary_tree(new_releases);
 
     for(int i=0;i<hashtable_size;i++){
