@@ -261,7 +261,7 @@ int add_new_movie(int movieID, int category, int year){
     return 1;
 }
 
-movie_t *Sentinel;
+movie_t *Sentinel=NULL;
 
 movie_t* insert_into_category_tree(movie_t array[], int start, int end){
     if(start>end)
